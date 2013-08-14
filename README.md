@@ -1,4 +1,5 @@
-chroot_deploy
+Rogentos Chroot Deployment Tool
 =============
 
-Rogentos Chroot Deployment Tool
+!! Warning Unfinished 
+Author: Blaga Florentin Gabriel @ Rogentos
