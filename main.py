@@ -4,6 +4,9 @@ import sys
 import os
 import tarfile
 
+import sip
+sip.setapi("QString", 2)
+
 from PyQt4 import QtCore, QtGui
 from main_ui import Ui_MainWindow
 
@@ -19,13 +22,18 @@ class ArchiveExtract(QtCore.QThread):
         self.output_path = opath
 
     def run(self):
-        tar = tarfile.open(self.path)
-        for file in tar.getmembers():
-            self.sigProgress.emit(file.name, file.size)
-            tar.extract(file, self.output_path)
-            
-        tar.close()
-        self.sigFinished.emit(0)
+		archive = open(self.path, 'rb')	    
+		tar = tarfile.open(fileobj=archive)
+
+		for file in tar.getmembers():
+			self.sigProgress.emit(file.name, file.size)
+			try:
+				tar.extract(file, self.output_path)
+			except UnicodeDecodeError:
+				# Pass files that contain garbage in their path.
+				continue
+		tar.close()
+		self.sigFinished.emit(0)
 
 
 
@@ -75,16 +83,42 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.textarea.append("<b><font color=blue> >> Output dir path:</font> {0}</b>".format(working_dir_path))
             self.output_dir = working_dir_path
             
-    def finished(self, status):
+    def chroot_setup(self, status):
         if status == 0:
-             self.ui.textarea.append("<b><font color=black> >> Extraction finished <font color=green>successefully</font>!</font></b>")
-             self.ui.statusbar.showMessage("#! Extraction complete!", 15)
+			self.ui.textarea.append("<b><font color=black> >> Extraction finished <font color=green>successefully</font>!</font></b>")
+			self.ui.statusbar.showMessage("#! Extraction complete!", 15)
+			self.ui.textarea.append("<b><font color=black>#! Checking <font color=red>extracted</font> files!</font></b>")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         else:
              self.ui.textarea.append("<b><font color=red> >> Something went wrong while extracting files!</font></b>")
              self.ui.statusbar.showMessage("#! Extraction failed!", 0)
              
     def progress_callback(self, filename, size):
-        self.ui.statusbar.showMessage("#! Now extracting: {0} size: {1}b".format(filename, size), 0)
+		try:
+			self.ui.statusbar.showMessage("#! Now extracting: {0} size: {1}b".format(filename, size), 0)
+		except UnicodeEncodeError:
+			# Pass files that contain garbage in their path.
+			pass
  
     def begin_execution(self):
         if self.package_list == None and self.output_dir == None:
@@ -103,17 +137,13 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.textarea.append("<b><font color=green> #! Starting deployment!</font></b>")
         self.archive_worker = ArchiveExtract(self.arch_path, self.output_dir)
         self.archive_worker.sigProgress[str,int].connect(self.progress_callback)
-        self.archive_worker.sigFinished[int].connect(self.finished)
+        self.archive_worker.sigFinished[int].connect(self.chroot_setup)
         if not self.archive_worker.isRunning():
-            self.ui.textarea.append("<b><font color=black> #! Archive Decompression started!</font></b>")
-            self.archive_worker.start()
-
-        self.ui.textarea.append("<b><font color=black>#! Checking <font color=red>extracted</font> files!</font></b>")
-        
-
-
-        
+			self.ui.textarea.append("<b><font color=black> #! Archive <font color=green>Decompression</font> started!</font></b>")
+			self.archive_worker.start()
+			self.ui.textarea.append("<b><font color=black> >> Scanning archive <font color=green>files</font>, please wait.<font></b>")
             
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
