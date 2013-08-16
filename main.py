@@ -56,7 +56,7 @@ class ChrootEnvThread(QtCore.QThread):
 			subprocess.Popen("mount -t proc none "+self.chroot_path+"/proc", shell=True)
 			subprocess.Popen("mount --rbind /dev "+self.chroot_path+"/dev", shell=True)
 		except Exception as ex:
-			self.sigCmdError.emit(ex)
+			self.sigCmdOutput.emit("CET: "+str(ex))
 			pass
 			
 		
@@ -83,15 +83,10 @@ class ChrootEnvThread(QtCore.QThread):
 		equo_log = open("equo_log", "w")
 		equo_log.write(proc_stdout)
 		self.sigCmdOutput.emit("Unmounting Devices!")
-
-		try:
-			subprocess.Popen("umount -l "+self.chroot_path+"/dev{/pts,/shm}") 
-			subprocess.Popen("umount "+self.chroot_path+"/dev", shell=True)
-			subprocess.Popen("umount "+self.chroot_path+"/sys", shell=True)
-			subprocess.Popen("umount "+self.chroot_path+"/proc", shell=True)
-		except Exception as ex:
-			self.sigCMdError.emit(ex)
-			pass
+		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+															stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
+		proc_stdout = proc.communicate(input='umount {proc,sys,dev/pts,dev/shm,dev} && exit')[0]
+		self.sigCmdOutput.emit(proc_stdout)
 		self.sigCmdOutput.emit("Deployment finished!")
 
 
@@ -177,7 +172,7 @@ class MainWindow(QtGui.QMainWindow):
 				self.ui.textarea.append("<b><font color=black>>> Cannot find <font color=red>sys</font> please check the archive!</font></b>")
 				return
 			
-			self.ui.textarea.append("<b><font color=black> #! Setting up <font color=green>Chroot</font> environment!<b></font>")
+			self.ui.textarea.append("<b><font color=black> #! Setting up <font color=green>Gentoo chroot</font> environment!<b></font>")
 			self.chroot_worker = ChrootEnvThread(self.chroot_dir, self.packages)
 			self.chroot_worker.sigCmdOutput[str].connect(self.chroot_callback)
 			if not self.chroot_worker.isRunning():
