@@ -2,6 +2,7 @@
 
 import sys
 import shutil
+import subprocess
 import os
 import tarfile
 
@@ -40,6 +41,54 @@ class ArchiveExtract(QtCore.QThread):
 		self.sigFinished.emit(0)
 
 
+class ChrootEnvThread(QtCore.QThread):
+	sigCmdOutput = QtCore.pyqtSignal(str)
+	
+	def __init__(self, chroot_path, package_list, parent=None):
+		super(QtCore.QThread, self).__init__(parent)
+		self.chroot_path = chroot_path
+		self.package_list = package_list
+	
+	def run(self):
+		self.sigCmdOutput.emit("Mounting <font color=green>/sys,</font> <font color=green>/proc</font> and <font color=green>/dev</font>!")
+		try:
+			subprocess.Popen("mount -t sysfs none "+self.chroot_path+"/sys", shell=True)
+			subprocess.Popen("mount -t proc none "+self.chroot_path+"/proc", shell=True)
+			subprocess.Popen("mount --rbind /dev "+self.chroot_path+"/dev", shell=True)
+		except Exception as ex:
+			self.sigCmdError.emit(ex)
+			pass
+			
+		
+		self.sigCmdOutput.emit("Entered Chroot Environment!")
+		self.sigCmdOutput.emit("Exec: env-update!")
+		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+ 															stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
+		proc_stdout = proc.communicate(input='env-update && exit')[0]
+		self.sigCmdOutput.emit(proc_stdout)
+		self.sigCmdOutput.emit("Exec: source /etc/profile")
+		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+ 															stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
+		proc_stdout = proc.communicate(input='source /etc/profile && exit')[0]
+		self.sigCmdOutput.emit(proc_stdout)
+		self.sigCmdOutput.emit("Exec: equo update && equo repo mirrorsort")
+		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+		proc_stdout = proc.communicate(input='equo repo mirrorsort sabayonlinux.org && equo update && exit')[0]
+		self.sigCmdOutput.emit("Adding packages to the chroot environment!")
+		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+		proc_stdout = proc.communicate(input='equo install '+' '.join(package_list)+' && exit')[0]
+
+		self.sigCmdOutput.emit("Unmounting Devices!")
+
+		try:
+			subprocess.Popen("umount -l "+self.chroot_path+"/dev", shell=True)
+			subprocess.Popen("umount "+self.chroot_path+"/sys", shell=True)
+			subprocess.Popen("umount "+self.chroot_path+"/proc", shell=True)
+		except Exception as ex:
+			self.sigCMdError.emit(ex)
+			pass
+		self.sigCmdOutput.emit("Deployment finished!")
+
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -53,6 +102,7 @@ class MainWindow(QtGui.QMainWindow):
 		self.package_list = None
 		self.output_dir = None
 		self.chroot_dir = None
+		self.packages = None
 
 		self.init_info()
 
@@ -81,14 +131,20 @@ class MainWindow(QtGui.QMainWindow):
         if package_path:
             self.ui.textarea.append("<b><font color=blue> <font color=black>>></font> Package List path:</font> {0}</b>".format(package_path))
             self.package_list = package_path
+			with open(package_path) as pl:
+				for line in pl:
+					self.packages.append(line)
 
     def working_dir_path(self):
         working_dir_path = QtGui.QFileDialog.getExistingDirectory(self, 'Working Directory Path')
         if working_dir_path:
 			self.ui.textarea.append("<b><font color=blue> <font color=black>>></font> Output dir path:</font> {0}</b>".format(working_dir_path))
-			self.ui.textarea.append("<b><font color=black> <font color=red>!!</font> Warning folder content will be <font color=red>erased</font></font>!</b>")
+			self.ui.textarea.append("<b><font color=black> <font color=red>!!</font> Warning folder content will be <font color=red> erased</font></font>!</b>")
 			self.output_dir = working_dir_path
-            
+    def chroot_callback(self, message):
+		if message:
+			self.ui.textarea.append("<b><font color=black> >> "+message+" </font></b>")
+	       
     def chroot_setup(self, status):
         if status == 0:
 			self.ui.textarea.append("<b><font color=black> >> Extraction feinished <font color=green>successefully</font>!</font></b>")
@@ -116,11 +172,16 @@ class MainWindow(QtGui.QMainWindow):
 				return
 			
 			self.ui.textarea.append("<b><font color=black> #! Setting up <font color=green>Chroot</font> environment!<b></font>")
+			self.chroot_worker = ChrootEnvThread(self.chroot_dir)
+			self.chroot_worker.sigCmdOutput[str].connect(self.chroot_callback, self.packages)
+			if not self.chroot_worker.isRunning():
+				self.chroot_worker.start()
 
         else:
              self.ui.textarea.append("<b><font color=red> >> Something went wrong while extracting files!</font></b>")
              self.ui.statusbar.showMessage("#! Extraction failed!", 0)
-             
+        
+     
     def progress_callback(self, filename, size):
 		try:
 			self.ui.statusbar.showMessage("#! Now extracting: {0} size: {1}b".format(filename, size), 0)
@@ -143,7 +204,7 @@ class MainWindow(QtGui.QMainWindow):
 			return
 		
         
-		self.ui.textarea.append("<b><font color=green> #! Starting deployment!</font></b>")
+		self.ui.textarea.append("<b><font color=black>#!</font><font color=green>Starting deployment!</font></b>")
 		self.archive_worker = ArchiveExtract(self.arch_path, self.output_dir)
 		self.archive_worker.sigProgress[str,int].connect(self.progress_callback)
 		self.archive_worker.sigFinished[int].connect(self.chroot_setup)
