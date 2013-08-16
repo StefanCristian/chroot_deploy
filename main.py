@@ -27,7 +27,7 @@ class ArchiveExtract(QtCore.QThread):
 		shutil.rmtree(self.output_path)
 		os.makedirs(self.output_path)
 
-		archive = open(self.path, 'rb')	    
+		archive = open(self.path, 'rb', encoding='utf8')	    
 		tar = tarfile.open(fileobj=archive)
 
 		for file in tar.getmembers():
@@ -85,7 +85,8 @@ class ChrootEnvThread(QtCore.QThread):
 		self.sigCmdOutput.emit("Unmounting Devices!")
 
 		try:
-			subprocess.Popen("umount -l "+self.chroot_path+"/dev", shell=True)
+			subprocess.Popen("umount -l "+self.chroot_path+"/dev{/pts,/shm}") 
+			subprocess.Popen("umount "+self.chroot_path+"/dev", shell=True)
 			subprocess.Popen("umount "+self.chroot_path+"/sys", shell=True)
 			subprocess.Popen("umount "+self.chroot_path+"/proc", shell=True)
 		except Exception as ex:
