@@ -185,6 +185,7 @@ class MainWindow(QtGui.QMainWindow):
 		else:
 			self.ui.textarea.append("<b><font color=red> >> Something went wrong while extracting files!</font></b>")
 			self.ui.statusbar.showMessage("#! Extraction failed!", 0)
+			return
         
      
 	def progress_callback(self, filename, size):
