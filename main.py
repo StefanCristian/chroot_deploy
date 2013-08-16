@@ -27,8 +27,8 @@ class ArchiveExtract(QtCore.QThread):
 		shutil.rmtree(self.output_path)
 		os.makedirs(self.output_path)
 
-		archive = open(self.path, 'rb', encoding='utf8')	    
-		tar = tarfile.open(fileobj=archive)
+		archive = open(self.path, 'rb')	    
+		tar = tarfile.open(fileobj=archive,  encoding='utf8')
 
 		for file in tar.getmembers():
 			self.sigProgress.emit(file.name, file.size)
