@@ -52,14 +52,14 @@ class ChrootEnvThread(QtCore.QThread):
 	def run(self):
 		self.sigCmdOutput.emit("Mounting <font color=green>/sys</font>, <font color=green>/proc</font> and <font color=green>/dev</font>!")
 		try:
-			subprocess.Popen("mount -t sysfs none "+self.chroot_path+"/sys", shell=True)
-			subprocess.Popen("mount -t proc none "+self.chroot_path+"/proc", shell=True)
-			subprocess.Popen("mount --rbind /dev "+self.chroot_path+"/dev", shell=True)
+			subprocess.Popen("mount -t sysfs /sys "+self.chroot_path+"/sys", shell=True)
+			subprocess.Popen("mount -t proc /proc "+self.chroot_path+"/proc", shell=True)
+			subprocess.Popen("mount --bind /dev "+self.chroot_path+"/dev", shell=True)
 		except Exception as ex:
+			self.sigCmdOutput.emit("Failed to Mount the Devices")
 			self.sigCmdOutput.emit("CET: "+str(ex))
-			pass
+			return
 			
-		
 		self.sigCmdOutput.emit("Entered Chroot Environment!")
 		self.sigCmdOutput.emit("Exec: <font color=green>env-update<font>!")
 		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
@@ -83,10 +83,13 @@ class ChrootEnvThread(QtCore.QThread):
 		equo_log = open("equo_log", "w")
 		equo_log.write(proc_stdout)
 		self.sigCmdOutput.emit("Unmounting Devices!")
-		proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
-															stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
-		proc_stdout = proc.communicate(input='umount {proc,sys,dev/pts,dev/shm,dev} && exit')[0]
-		self.sigCmdOutput.emit(proc_stdout)
+		self.sigCmdOutput.emit(self.chroot_path)
+		try:
+			subprocess.Popen('umount -n -l '+ self.chroot_path+'{/proc,/sys,/dev}')
+		except Exception as ex:
+			self.sigCmdOutput.emit("Failed to Unmount the Devices")
+			self.sigCmdOutput.emit(str(ex))
+			return		
 		self.sigCmdOutput.emit("Deployment finished!")
 
 
