@@ -56,7 +56,7 @@ class ChrootEnvThread(QtCore.QThread):
 			subprocess.Popen("mount -t proc /proc "+self.chroot_path+"/proc", shell=True)
 			subprocess.Popen("mount --bind /dev "+self.chroot_path+"/dev", shell=True)
 		except Exception as ex:
-			self.sigCmdOutput.emit("Failed to Mount the Devices")
+			self.sigCmdOutput.emit("Failed to <font color=red>Unmount</font> the <font color=red>proc, dev and sys</font>")
 			self.sigCmdOutput.emit("CET: "+str(ex))
 			return
 			
@@ -82,12 +82,11 @@ class ChrootEnvThread(QtCore.QThread):
 		self.sigCmdOutput.emit("<font color=green>Equo</font> log saved to <font color=green>CWD</font>")
 		equo_log = open("equo_log", "w")
 		equo_log.write(proc_stdout)
-		self.sigCmdOutput.emit("Unmounting Devices!")
-		self.sigCmdOutput.emit(self.chroot_path)
+		self.sigCmdOutput.emit("Unmounting <font color=red>proc, dev and sys</font>!")
 		try:
-			subprocess.Popen('umount -n -l '+ self.chroot_path+'{/proc,/sys,/dev}')
+			subprocess.Popen('umount -n -l '+ self.chroot_path+'{/proc,/sys,/dev}', shell=True)
 		except Exception as ex:
-			self.sigCmdOutput.emit("Failed to Unmount the Devices")
+			self.sigCmdOutput.emit("Failed to <font color=red>Unmount</font> the <font color=red>proc, dev and sys</font>")
 			self.sigCmdOutput.emit(str(ex))
 			return		
 		self.sigCmdOutput.emit("Deployment finished!")
