@@ -13,6 +13,7 @@ from PyQt4 import QtCore, QtGui
 from main_ui import Ui_MainWindow
 
 ROGENTOS_DEFAULT_ARCHIVE_NAME = ["Rogentos_Server_x86", "Rogentos_Server_x64"]
+ROGENTOS_DEFAULT_SCRIPT_NAME = "chroot_cfg.sh"
 
 class ArchiveExtract(QtCore.QThread):
     sigFinished = QtCore.pyqtSignal(int)
@@ -120,6 +121,7 @@ class MainWindow(QtGui.QMainWindow):
 		
 		self.default_path = True
 		self.shell_script = False
+		self.default_sh_script_path = True
 
 		self.arch_path = "/rogentos/"
 		
@@ -239,7 +241,7 @@ class MainWindow(QtGui.QMainWindow):
 			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input <font color=red>Package List</font> path and <font color=red>Output Dir</font> path!</font></b>")
 			return
 		    
-                if self.default_path == True:
+                if self.default_path:
                         if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]) == False:
                                 self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x86' not found in <font color=red>/rogentos/</font>!<b></font>")
                                 if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]) == False:
@@ -254,7 +256,15 @@ class MainWindow(QtGui.QMainWindow):
                     if os.path.isfile(self.arch_path) == False:
                         self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input the <font color=red>Archive</font> path!</font></b>")
                         return
-                        
+        if self.shell_script_path == True:
+				if os.path.isfile("/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME) == False:
+					self.ui.textarea.append("<b><font color=black><font color=red>!! </font> /rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME+" not found skipping!")
+					return
+				else:
+					self.shell_script_path = "/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME
+					self.shell_script = True  
+				
+			
 		if os.path.isfile(self.package_list) == False:
 			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Invalid <font color=red>Package List</font> file!</b>")
 			return
