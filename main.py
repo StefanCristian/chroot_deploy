@@ -91,8 +91,8 @@ class ChrootEnvThread(QtCore.QThread):
         proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
                                                             stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
         proc_stdout = proc.communicate(input='equo install '+' '.join(self.package_list)+' && exit')[0]
-        self.sigCmdOutput.emit("<font color=green>Equo</font> log saved to <font color=green>CWD</font>")
-        equo_log = open("equo_log", "w")
+        self.sigCmdOutput.emit("<font color=green>Equo</font> log saved to <font color=green>/var/log/equo.log</font>")
+        equo_log = open("/var/log/equo.log", "w")
         equo_log.write(proc_stdout)
         if self.shell_script:
                         self.sigCmdOutput.emit("Executing bash script in chroot environment!")
@@ -170,6 +170,7 @@ class MainWindow(QtGui.QMainWindow):
                 shell_script = QtGui.QFileDialog.getOpenFileName(self, 'Bash Script Path')
                 if shell_script:
                     self.ui.textarea.append("<b><font color=black> >> Custom <font color=green>BASH</font> script path: </font> {0} </b>".format(shell_script))
+					self.default_sh_script_path = False
                     self.shell_script_path = shell_script
                     self.shell_script = True
 
