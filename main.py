@@ -170,7 +170,7 @@ class MainWindow(QtGui.QMainWindow):
                 shell_script = QtGui.QFileDialog.getOpenFileName(self, 'Bash Script Path')
                 if shell_script:
                     self.ui.textarea.append("<b><font color=black> >> Custom <font color=green>BASH</font> script path: </font> {0} </b>".format(shell_script))
-					self.default_sh_script_path = False
+                    self.default_sh_script_path = False
                     self.shell_script_path = shell_script
                     self.shell_script = True
 
