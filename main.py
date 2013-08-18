@@ -241,28 +241,29 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input <font color=red>Package List</font> path and <font color=red>Output Dir</font> path!</font></b>")
             return
             
-            if self.default_path:
-                if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]) == False:
-                    self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x86' not found in <font color=red>/rogentos/</font>!<b></font>")
-                    if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]) == False:
-                            self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x64' not found in <font color=red>/rogentos/</font>!<b></font>")
-                            return
-                    else:
-                        self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]
+        if self.default_path:
+            if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]) == False:
+                self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x86' not found in <font color=red>/rogentos/</font>!<b></font>")
+                if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]) == False:
+                         self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x64' not found in <font color=red>/rogentos/</font>!<b></font>")
+                        return
+                else:
+                    self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]
                                        
-                else:
-                    self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]         
             else:
-                if os.path.isfile(self.arch_path) == False:
-                    self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input the <font color=red>Archive</font> path!</font></b>")
-                    return
-        if self.shell_script_path == True:
-                if os.path.isfile("/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME) == False:
-                    self.ui.textarea.append("<b><font color=black><font color=red>!! </font> /rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME+" not found skipping!")
-                    return
-                else:
-                    self.shell_script_path = "/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME
-                    self.shell_script = True  
+                self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]         
+        else:
+            if os.path.isfile(self.arch_path) == False:
+                self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input the <font color=red>Archive</font> path!</font></b>")
+                return
+            
+        if self.default_sh_script_path == True:
+            if os.path.isfile("/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME) == False:
+                self.ui.textarea.append("<b><font color=black><font color=red>!! </font> /rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME+" not found skipping!")
+                return
+            else:
+                self.shell_script_path = "/rogentos/"+ROGENTOS_DEFAULT_SCRIPT_NAME
+                self.shell_script = True  
                 
             
         if os.path.isfile(self.package_list) == False:
