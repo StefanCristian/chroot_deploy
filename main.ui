@@ -50,7 +50,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Archive path is optional. Default Path: /rogentos/</string>
+     <string>Archive path is optional. Default Path: /rogentos/Rogentos_Server_(x86/x64)</string>
     </property>
    </widget>
    <widget class="QTextBrowser" name="textarea">
@@ -67,7 +67,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>130</y>
+      <y>160</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -87,6 +87,19 @@
     </property>
     <property name="text">
      <string>Begin</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="sh_script_btn">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>120</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Chroot Conf</string>
     </property>
    </widget>
   </widget>

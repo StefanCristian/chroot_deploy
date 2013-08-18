@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Thu Aug 15 00:25:03 2013
+# Created: Sun Aug 18 23:32:47 2013
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -42,11 +42,14 @@ class Ui_MainWindow(object):
         self.textarea.setGeometry(QtCore.QRect(95, 20, 371, 241))
         self.textarea.setObjectName(_fromUtf8("textarea"))
         self.wdir_button = QtGui.QPushButton(self.centralwidget)
-        self.wdir_button.setGeometry(QtCore.QRect(10, 130, 75, 23))
+        self.wdir_button.setGeometry(QtCore.QRect(10, 160, 75, 23))
         self.wdir_button.setObjectName(_fromUtf8("wdir_button"))
         self.begin_button = QtGui.QPushButton(self.centralwidget)
         self.begin_button.setGeometry(QtCore.QRect(10, 210, 75, 23))
         self.begin_button.setObjectName(_fromUtf8("begin_button"))
+        self.sh_script_btn = QtGui.QPushButton(self.centralwidget)
+        self.sh_script_btn.setGeometry(QtCore.QRect(10, 120, 75, 23))
+        self.sh_script_btn.setObjectName(_fromUtf8("sh_script_btn"))
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
@@ -66,8 +69,9 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Chroot Deployment", None))
         self.file_inst_list_path.setText(_translate("MainWindow", "Package List", None))
         self.ar_path_button.setText(_translate("MainWindow", "Archive Path", None))
-        self.infoLabel.setText(_translate("MainWindow", "Archive path is optional. Default Path: /rogentos/", None))
+        self.infoLabel.setText(_translate("MainWindow", "Archive path is optional. Default Path: /rogentos/Rogentos_Server_(x86/x64)", None))
         self.wdir_button.setText(_translate("MainWindow", "Output", None))
         self.begin_button.setText(_translate("MainWindow", "Begin", None))
+        self.sh_script_btn.setText(_translate("MainWindow", "Chroot Conf", None))
         self.menuAbout.setTitle(_translate("MainWindow", "About", None))
 

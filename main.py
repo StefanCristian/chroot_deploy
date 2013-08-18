@@ -12,7 +12,7 @@ sip.setapi("QString", 2)
 from PyQt4 import QtCore, QtGui
 from main_ui import Ui_MainWindow
 
-
+ROGENTOS_DEFAULT_ARCHIVE_NAME = ["Rogentos_Server_x86", "Rogentos_Server_x64"]
 
 class ArchiveExtract(QtCore.QThread):
     sigFinished = QtCore.pyqtSignal(int)
@@ -20,8 +20,10 @@ class ArchiveExtract(QtCore.QThread):
 
     def __init__(self, path, opath, parent=None):
         super(QtCore.QThread, self).__init__(parent)
+        
         self.path = path
         self.output_path = opath
+
 
     def run(self):
 		shutil.rmtree(self.output_path)
@@ -44,10 +46,17 @@ class ArchiveExtract(QtCore.QThread):
 class ChrootEnvThread(QtCore.QThread):
 	sigCmdOutput = QtCore.pyqtSignal(str)
 	
-	def __init__(self, chroot_path, package_list, parent=None):
+	def __init__(self, chroot_path, package_list, shpath=None, parent=None):
 		super(QtCore.QThread, self).__init__(parent)
 		self.chroot_path = chroot_path
 		self.package_list = package_list
+
+		self.shell_script = False
+                self.script_name = None
+                if shpath:
+                        shutil.copyfile(shpath, self.chroot_path)
+                        self.script_name = os.path.basename(shpath)
+                        self.shell_script = True
 	
 	def run(self):
 		self.sigCmdOutput.emit("Mounting <font color=green>/sys</font>, <font color=green>/proc</font> and <font color=green>/dev</font>!")
@@ -82,6 +91,12 @@ class ChrootEnvThread(QtCore.QThread):
 		self.sigCmdOutput.emit("<font color=green>Equo</font> log saved to <font color=green>CWD</font>")
 		equo_log = open("equo_log", "w")
 		equo_log.write(proc_stdout)
+		if self.shell_script:
+                        self.sigCmdOutput.emit("Executing bash script in chroot environment!")
+                        proc = subprocess.Popen(['chroot', self.chroot_path, '/bin/bash'], stdout=subprocess.PIPE, 
+												stdin=subprocess.PIPE,stderr=subprocess.STDOUT)
+                        proc_stdout = proc.communicate(input='chmod +x /'+self.script_name+' && sh /'self.script_name+' && exit')[0]
+		
 		self.sigCmdOutput.emit("Unmounting <font color=red>proc, dev and sys</font>!")
 		try:
 			subprocess.Popen('umount -n -l '+ self.chroot_path+'{/proc,/sys,/dev}', shell=True)
@@ -99,11 +114,17 @@ class MainWindow(QtGui.QMainWindow):
 		self.ui.setupUi(self)
 		
 		self.setupSignals()
+		
+		self.default_path = True
+		self.shell_script = False
 
 		self.arch_path = "/rogentos/"
+		
 		self.package_list = None
+		self.shell_script_path = None
 		self.output_dir = None
 		self.chroot_dir = None
+		
 		self.packages = []
 
 		self.init_info()
@@ -114,6 +135,7 @@ class MainWindow(QtGui.QMainWindow):
 		self.ui.file_inst_list_path.clicked.connect(self.package_file_dialog)
 		self.ui.wdir_button.clicked.connect(self.working_dir_path)
 		self.ui.begin_button.clicked.connect(self.begin_execution)
+		self.ui.sh_script_btn.clicked.connect(self.sh_script_path)
 
 	def init_info(self):
 		self.ui.textarea.append("<b><font size=5>Rogentos Chroot Deployment Tool</font></b><br>")
@@ -127,6 +149,7 @@ class MainWindow(QtGui.QMainWindow):
 		if arch_path:
 			self.ui.textarea.append("<b><font color=blue> <font color=black>>></font> Archive path:</font> {0}</b>".format(arch_path))
 			self.arch_path = arch_path
+			self.default_path = False
 
 	def package_file_dialog(self):
 		package_path = QtGui.QFileDialog.getOpenFileName(self, 'Package List Path', '.')
@@ -137,13 +160,21 @@ class MainWindow(QtGui.QMainWindow):
 				for line in pl:
 					if line:
 						self.packages.append(line)
+	def sh_script_path(self):
+                shell_script = QtGui.QFileDialog.getExistingDirectory(self, 'Working Directory Path')
+                if shell_script:
+                    self.ui.textarea.append("<b><font color=black> >> Custom BASH script path: </font> <font color=green> {0} </font></b>".format(shell_script))
+                    self.shell_script_path = shell_script
+                    self.shell_script = True
 
 	def working_dir_path(self):
 		working_dir_path = QtGui.QFileDialog.getExistingDirectory(self, 'Working Directory Path')
 		if working_dir_path:
 			self.ui.textarea.append("<b><font color=blue> <font color=black>>></font> Output dir path:</font> {0}</b>".format(working_dir_path))
 			self.ui.textarea.append("<b><font color=black> <font color=red>!!</font> Warning folder content will be <font color=red> erased</font></font>!</b>")
+			
 			self.output_dir = working_dir_path
+			
 	def chroot_callback(self, message):
 		if message:
 			self.ui.textarea.append("<b><font color=black> >> "+message+" </font></b>")
@@ -175,8 +206,14 @@ class MainWindow(QtGui.QMainWindow):
 				return
 			
 			self.ui.textarea.append("<b><font color=black> #! Setting up <font color=green>Gentoo chroot</font> environment!<b></font>")
-			self.chroot_worker = ChrootEnvThread(self.chroot_dir, self.packages)
+
+			if self.shell_script:
+                                self.chroot_worker = ChrootEnvThread(self.chroot_dir, self.packages, self.shell_script_path)
+                        else:
+                                self.chroot_worker = ChrootEnvThread(self.chroot_dir, self.packages)
+
 			self.chroot_worker.sigCmdOutput[str].connect(self.chroot_callback)
+			
 			if not self.chroot_worker.isRunning():
 				self.chroot_worker.start()
 
@@ -187,22 +224,34 @@ class MainWindow(QtGui.QMainWindow):
         
      
 	def progress_callback(self, filename, size):
-		try:
-			self.ui.statusbar.showMessage("#! Now extracting: {0} size: {1}b".format(filename, size), 0)
-		except UnicodeEncodeError:
-			# Pass files that contain garbage in their path.
-			pass
+		self.ui.statusbar.showMessage("#! Now extracting: {0} size: {1}b".format(filename, size), 0)
+
  
 	def begin_execution(self):
 		if self.package_list == None and self.output_dir == None:
 			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input <font color=red>Package List</font> path and <font color=red>Output Dir</font> path!</font></b>")
 			return
-		if os.path.isfile(self.arch_path) == False:
-			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Invalid <font color=red>Archive</font> file!<b></font>")
-			return
+		    
+                if self.default_path == False:
+                        if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]) == False:
+                                self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x86' not found in <font color=red>/rogentos/</font>!<b></font>")
+                                if os.path.isfile(self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]) == False:
+                                        self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Archive 'Rogentos_Server_x64' not found in <font color=red>/rogentos/</font>!<b></font>")
+                                        return
+                                else:
+                                    self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[1]
+                                                   
+                        else:
+                            self.arch_path = self.arch_path+ROGENTOS_DEFAULT_ARCHIVE_NAME[0]         
+                else:
+                    if os.path.isfile(self.arch_path) == False:
+                        self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Please input the <font color=red>Archive</font> path!</font></b>")
+                        return
+                        
 		if os.path.isfile(self.package_list) == False:
 			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Invalid <font color=red>Package List</font> file!</b>")
 			return
+		    
 		if os.path.isdir(self.output_dir) == False:
 			self.ui.textarea.append("<b><font color=black><font color=red>!!</font> Invalid <font color=red>Output</font> directory!</b>")
 			return
