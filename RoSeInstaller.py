@@ -12,7 +12,7 @@ sip.setapi("QString", 2)
 from PyQt4 import QtCore, QtGui
 from RoSeInstaller_ui import Ui_MainWindow
 
-ROGENTOS_DEFAULT_ARCHIVE_NAME = ["Rogentos_Server_x86", "Rogentos_Server_x64"]
+ROGENTOS_DEFAULT_ARCHIVE_NAME = ["RogentOS_Server_x86", "RogentOS_Server_x64"]
 ROGENTOS_DEFAULT_SCRIPT_NAME = "chroot_cfg.sh"
 
 class ArchiveExtract(QtCore.QThread):
